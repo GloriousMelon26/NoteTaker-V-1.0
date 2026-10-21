@@ -4,23 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VoiceNotes Pro</title>
-    <!-- Stable Tailwind CSS Engine -->
-    <script src="https://tailwindcss.com"></script>
     <link rel="preconnect" href="https://googleapis.com">
     <link rel="preconnect" href="https://gstatic.com" crossorigin>
     <link href="https://googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Localized Custom Core Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#0b0f19] text-slate-200 min-h-screen flex flex-col items-center antialiased selection:bg-indigo-500/30">
+<body class="dark-bg text-slate-200 min-h-screen flex flex-col items-center antialiased selection-bg">
 
-    <div class="w-full max-w-4xl px-4 py-8 md:py-12 flex flex-col gap-8">
+    <div class="app-container px-4 py-8 md:py-12 flex flex-col gap-8">
         
         <!-- Header Section -->
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-                    🎙️ VoiceNotes <span class="text-xs bg-indigo-500/10 text-indigo-400 font-semibold px-2 py-0.5 rounded-full border border-indigo-500/20">Pro</span>
+                    🎙️ VoiceNotes <span class="badge text-xs bg-indigo-500/10 text-indigo-400 font-semibold px-2 py-0.5 rounded-full border border-indigo-500/20">Pro</span>
                 </h1>
                 <p class="text-sm text-slate-400 mt-1">Continuous ambient listening with smart pause segmentation.</p>
             </div>
@@ -31,12 +29,12 @@
         </header>
 
         <!-- Command Station Control Strip -->
-        <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center justify-between backdrop-blur-md">
+        <div class="bg-slate-900-50 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center justify-between backdrop-blur-md">
             <div class="flex items-center gap-3 w-full sm:w-auto">
-                <button id="startBtn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/10 active:scale-95 cursor-pointer text-sm">
+                <button id="startBtn" class="btn btn-indigo w-full sm:w-auto text-white font-medium px-6 py-2.5 rounded-xl transition-all shadow-lg active:scale-95 cursor-pointer text-sm">
                     Start Capture
                 </button>
-                <button id="stopBtn" class="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-2.5 rounded-xl hidden transition-all active:scale-95 cursor-pointer text-sm pulse-ring">
+                <button id="stopBtn" class="btn btn-red w-full sm:w-auto text-white font-medium px-6 py-2.5 rounded-xl hidden transition-all active:scale-95 cursor-pointer text-sm pulse-ring">
                     Stop & Commit
                 </button>
             </div>
@@ -44,21 +42,21 @@
                 <button id="clearBtn" class="text-xs font-medium text-slate-400 hover:text-slate-200 transition cursor-pointer">
                     Reset Canvas
                 </button>
-                <button id="saveBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700/60 transition cursor-pointer">
+                <button id="saveBtn" class="btn-archive bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700/60 transition cursor-pointer">
                     Archive Note
                 </button>
             </div>
         </div>
 
         <!-- Split Layout Workspace -->
-        <main class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <main class="workspace-grid grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Left Stream Canvas -->
             <div class="flex flex-col gap-2.5">
                 <div class="flex justify-between items-center px-1">
                     <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Live Input Monitoring</label>
                     <span class="text-[10px] text-slate-500 font-mono">RAW STREAM</span>
                 </div>
-                <div id="liveTranscript" class="bg-slate-950/60 border border-slate-800 rounded-2xl p-5 h-72 overflow-y-auto text-slate-400 italic whitespace-pre-wrap leading-relaxed text-sm select-none border-dashed transition-all">
+                <div id="liveTranscript" class="bg-slate-950-60 border border-slate-800 rounded-2xl p-5 h-72 overflow-y-auto text-slate-400 italic whitespace-pre-wrap leading-relaxed text-sm select-none border-dashed transition-all">
                     Initiate capture parameters to begin speech streaming tracking...
                 </div>
             </div>
@@ -78,7 +76,7 @@
             <div class="border-b border-slate-800 pb-3 mb-4">
                 <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Local Notebook Cache</h2>
             </div>
-            <div id="notesHistory" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div id="notesHistory" class="notes-grid grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Data injections load smoothly here -->
             </div>
         </section>
