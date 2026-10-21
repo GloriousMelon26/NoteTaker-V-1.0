@@ -4,72 +4,165 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VoiceNotes Lite</title>
-    <!-- Tailwind CSS Engine -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- Stable Tailwind CSS Play CDN (Fixes ChromeOS compilation hang) -->
+    <script src="https://tailwindcss.com"></script>
     <style>
         .glow { 
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); 
-            border-color: rgba(239, 68, 68, 0.4) !important;
+            border-color: rgba(239, 68, 68, 0.4) !important; 
         }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-4 sm:p-8">
-
     <div class="w-full max-w-3xl flex flex-col gap-6">
         <!-- Header -->
-        <header class="flex justify-between items-center border-b border-slate-700 pb-4">
-            <div>
-                <h1 class="text-2xl font-bold text-indigo-400">🎙️ VoiceNotes Lite</h1>
-                <p class="text-xs text-slate-400 mt-0.5">100% Local Code • Privacy-First Silence Formatting</p>
-            </div>
+        <header class="border-b border-slate-700 pb-4">
+            <h1 class="text-2xl font-bold text-indigo-400">🎙️ VoiceNotes Lite</h1>
+            <p class="text-xs text-slate-400 mt-0.5">Local Audio • Automatic Pause Segmentation</p>
         </header>
 
-        <!-- Control Panel -->
+        <!-- Control Bar -->
         <div class="flex flex-wrap gap-4 items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
             <div class="flex gap-3">
-                <button id="startBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-5 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer">
-                    🔴 Start Listening
-                </button>
-                <button id="stopBtn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium px-5 py-2 rounded-lg transition cursor-pointer hidden">
-                    ⏹️ Stop & Save
-                </button>
+                <button id="startBtn" class="bg-emerald-600 hover:bg-emerald-500 font-medium px-5 py-2 rounded-lg cursor-pointer transition">🔴 Start Listening</button>
+                <button id="stopBtn" class="bg-slate-700 hover:bg-slate-600 font-medium px-5 py-2 rounded-lg cursor-pointer hidden transition">⏹️ Stop & Save</button>
             </div>
-            <div id="status" class="text-sm text-slate-400 flex items-center gap-2">
-                Status: <span class="text-amber-400 font-medium">Ready</span>
-            </div>
+            <div id="status" class="text-sm text-slate-400">Status: <span class="text-amber-400 font-medium">Ready</span></div>
         </div>
 
-        <!-- Main Workspace -->
+        <!-- Workspaces -->
         <main class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Left Column: Raw Streaming Transcript -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Live Voice Stream</label>
-                <div id="liveTranscript" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-64 overflow-y-auto text-slate-400 italic whitespace-pre-wrap leading-relaxed">
-                    Click "Start Listening" and talk normally...
-                </div>
+                <label class="text-sm text-slate-400 uppercase tracking-wider font-semibold">Live Voice Stream</label>
+                <div id="liveTranscript" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-64 overflow-y-auto text-slate-400 italic whitespace-pre-wrap">Click "Start Listening" and talk...</div>
             </div>
-
-            <!-- Right Column: Local Silence Formatted Note -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Auto-Segmented Note</label>
-                <textarea id="formattedNote" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-64 text-slate-100 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed" placeholder="Pauses in your speech will automatically format text into clean bullet points..."></textarea>
+                <label class="text-sm text-slate-400 uppercase tracking-wider font-semibold">Auto-Segmented Note</label>
+                <textarea id="formattedNote" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-64 text-slate-100 resize-none focus:outline-none focus:border-indigo-500" placeholder="Pauses format text into bullet points..."></textarea>
             </div>
         </main>
 
-        <!-- Actions & History -->
+        <!-- Actions -->
         <div class="flex justify-end gap-3">
-            <button id="clearBtn" class="text-sm text-slate-400 hover:text-slate-200 transition cursor-pointer">Clear Workspace</button>
-            <button id="saveBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition cursor-pointer">Archive Note</button>
+            <button id="clearBtn" class="text-sm text-slate-400 hover:text-slate-200 cursor-pointer transition">Clear</button>
+            <button id="saveBtn" class="bg-indigo-600 hover:bg-indigo-500 text-sm font-medium px-4 py-2 rounded-lg cursor-pointer transition">Archive Note</button>
         </div>
 
-        <!-- Saved Notes List -->
+        <!-- Archive Logs -->
         <section class="mt-4">
-            <h2 class="text-lg font-bold text-slate-300 mb-3">Saved Notes (Browser Cache)</h2>
+            <h2 class="text-lg font-bold text-slate-300 mb-3">Saved Notes</h2>
             <div id="notesHistory" class="flex flex-col gap-3"></div>
         </section>
     </div>
 
-    <!-- External Script Integration -->
-    <script src="script.js"></script>
+    <!-- Script Logic -->
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusEl = document.getElementById('status');
+        const liveTranscript = document.getElementById('liveTranscript');
+        const formattedNote = document.getElementById('formattedNote');
+        const notesHistory = document.getElementById('notesHistory');
+
+        let recognition, finalTranscript = '', isListening = false, silenceTimer = null;
+        const SILENCE_THRESHOLD_MS = 1500;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                clearTimeout(silenceTimer);
+                let interimTranscript = '', freshFinalText = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) { 
+                        freshFinalText += event.results[i].transcript; 
+                    } else { 
+                        interimTranscript += event.results[i].transcript; 
+                    }
+                }
+                
+                if (freshFinalText) {
+                    finalTranscript += freshFinalText;
+                    silenceTimer = setTimeout(() => { handleSilenceDetected(); }, SILENCE_THRESHOLD_MS);
+                }
+                
+                liveTranscript.textContent = finalTranscript + interimTranscript;
+                liveTranscript.scrollTop = liveTranscript.scrollHeight;
+            };
+
+            recognition.onerror = (e) => { 
+                statusEl.innerHTML = `Status: <span class="text-red-400">Error: ${e.error}</span>`; 
+                toggleButtons(false); 
+            };
+            
+            recognition.onend = () => { if (isListening) recognition.start(); };
+        } else {
+            startBtn.disabled = true;
+            liveTranscript.textContent = "Voice input is unsupported here. Please use Google Chrome.";
+        }
+
+        function handleSilenceDetected() {
+            if (!finalTranscript.trim()) return;
+            let cleaned = finalTranscript.trim();
+            if (!cleaned.endsWith('\n\n')) { finalTranscript = cleaned + '\n\n• '; }
+            formattedNote.value = finalTranscript;
+            statusEl.innerHTML = `Status: <span class="text-indigo-400">Added point</span>`;
+            setTimeout(() => { if(isListening) statusEl.innerHTML = `Status: <span class="text-red-500">Listening...</span>`; }, 800);
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (!recognition) return;
+            finalTranscript = '• '; liveTranscript.textContent = ''; formattedNote.value = '';
+            recognition.start(); isListening = true; toggleButtons(true);
+            statusEl.innerHTML = `Status: <span class="text-red-500">Listening...</span>`;
+            liveTranscript.classList.add('glow');
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (!recognition || !isListening) return;
+            clearTimeout(silenceTimer); isListening = false; recognition.stop(); toggleButtons(false);
+            liveTranscript.classList.remove('glow');
+            let finishedText = finalTranscript.trim();
+            if (finishedText.endsWith('•')) finishedText = finishedText.slice(0, -1).trim();
+            formattedNote.value = finishedText;
+            statusEl.innerHTML = `Status: <span class="text-amber-400">Ready</span>`;
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            clearTimeout(silenceTimer); liveTranscript.textContent = 'Click "Start Listening" and talk...';
+            formattedNote.value = ''; finalTranscript = ''; statusEl.innerHTML = `Status: <span class="text-amber-400">Ready</span>`;
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            const content = formattedNote.value.trim();
+            if (!content || content === '•') return alert('No content to archive!');
+            const notes = JSON.parse(localStorage.getItem('local_voice_notes') || '[]');
+            notes.unshift({ id: Date.now(), text: content, date: new Date().toLocaleString() });
+            localStorage.setItem('local_voice_notes', JSON.stringify(notes));
+            renderHistory();
+            formattedNote.value = ''; finalTranscript = ''; liveTranscript.textContent = 'Click "Start Listening" and talk...';
+        });
+
+        function toggleButtons(listening) {
+            if (listening) { startBtn.classList.add('hidden'); stopBtn.classList.remove('hidden'); } 
+            else { startBtn.classList.remove('hidden'); stopBtn.classList.add('hidden'); }
+        }
+
+        function renderHistory() {
+            const notes = JSON.parse(localStorage.getItem('local_voice_notes') || '[]');
+            notesHistory.innerHTML = notes.map(n => `
+                <div class="bg-slate-800/60 border border-slate-700 p-4 rounded-xl flex flex-col gap-2">
+                    <div class="text-xs text-slate-500 font-mono font-semibold">${n.date}</div>
+                    <div class="text-slate-300 text-sm whitespace-pre-wrap">${n.text.replace(/[&<>'"]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[t]))}</div>
+                </div>
+            `).join('');
+        }
+        renderHistory();
+    </script>
 </body>
 </html>
