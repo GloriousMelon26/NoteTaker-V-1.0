@@ -15,7 +15,7 @@
     <div class="app-container px-4 py-8 md:py-12 flex flex-col gap-8">
         
         <!-- Header Section -->
-        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-6 gap-4">
+        <header class="flex flex-col sm-flex-row justify-between items-start sm-items-center border-b border-slate-800 pb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
                     🎙️ VoiceNotes <span class="badge text-xs bg-indigo-500/10 text-indigo-400 font-semibold px-2 py-0.5 rounded-full border border-indigo-500/20">Pro</span>
@@ -29,16 +29,16 @@
         </header>
 
         <!-- Command Station Control Strip -->
-        <div class="bg-slate-900-50 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center justify-between backdrop-blur-md">
-            <div class="flex items-center gap-3 w-full sm:w-auto">
-                <button id="startBtn" class="btn btn-indigo w-full sm:w-auto text-white font-medium px-6 py-2.5 rounded-xl transition-all shadow-lg active:scale-95 cursor-pointer text-sm">
+        <div class="bg-slate-900-50 border border-slate-800 p-4 rounded-2xl flex flex-col sm-flex-row gap-4 items-center justify-between backdrop-blur-md">
+            <div class="flex items-center gap-3 w-full sm-w-auto">
+                <button id="startBtn" class="btn btn-indigo w-full sm-w-auto text-white font-medium px-6 py-2.5 rounded-xl transition-all shadow-lg active:scale-95 cursor-pointer text-sm">
                     Start Capture
                 </button>
-                <button id="stopBtn" class="btn btn-red w-full sm:w-auto text-white font-medium px-6 py-2.5 rounded-xl hidden transition-all active:scale-95 cursor-pointer text-sm pulse-ring">
+                <button id="stopBtn" class="btn btn-red w-full sm-w-auto text-white font-medium px-6 py-2.5 rounded-xl hidden transition-all active:scale-95 cursor-pointer text-sm pulse-ring">
                     Stop & Commit
                 </button>
             </div>
-            <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
+            <div class="flex items-center gap-4 w-full sm-w-auto justify-end">
                 <button id="clearBtn" class="text-xs font-medium text-slate-400 hover:text-slate-200 transition cursor-pointer">
                     Reset Canvas
                 </button>
@@ -105,21 +105,22 @@
                 let interimTranscript = '', freshFinalText = '';
                 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const segment = event.results[i] && event.results[i][0] && event.results[i][0].transcript;
+                    const validatedText = segment ? String(segment) : '';
+                    
                     if (event.results[i].isFinal) { 
-                        freshFinalText += event.results[i].transcript; 
+                        freshFinalText += validatedText; 
                     } else { 
-                        interimTranscript += event.results[i].transcript; 
+                        interimTranscript += validatedText; 
                     }
                 }
                 
-                if (freshFinalText) {
+                if (freshFinalText.trim()) {
                     finalTranscript += freshFinalText;
                     silenceTimer = setTimeout(() => { handleSilenceDetected(); }, SILENCE_THRESHOLD_MS);
                 }
                 
                 liveTranscript.textContent = finalTranscript + interimTranscript;
-                liveTranscript.classList.remove('text-slate-400');
-                liveTranscript.classList.add('text-slate-200');
                 liveTranscript.scrollTop = liveTranscript.scrollHeight;
             };
 
@@ -130,7 +131,7 @@
             };
             
             recognition.onend = () => { 
-                if (isListening) { recognition.start(); } 
+                if (isListening) { try { recognition.start(); } catch(err) {} } 
             };
         } else {
             startBtn.disabled = true;
@@ -151,14 +152,14 @@
         startBtn.addEventListener('click', () => {
             if (!recognition) return;
             finalTranscript = '• '; liveTranscript.textContent = ''; formattedNote.value = '';
-            isListening = true; recognition.start(); toggleButtons(true);
+            isListening = true; try { recognition.start(); } catch(e){} toggleButtons(true);
             updateStatus('Active Recording', 'bg-red-500/10 text-red-400 border-red-500/20', 'bg-red-500');
             liveTranscript.className = "bg-slate-950 border border-indigo-500/30 rounded-2xl p-5 h-72 overflow-y-auto text-slate-200 whitespace-pre-wrap leading-relaxed text-sm transition-all shadow-inner";
         });
 
         stopBtn.addEventListener('click', () => {
             if (!recognition || !isListening) return;
-            clearTimeout(silenceTimer); isListening = false; recognition.stop(); toggleButtons(false);
+            clearTimeout(silenceTimer); isListening = false; try { recognition.stop(); } catch(e){} toggleButtons(false);
             liveTranscript.className = "bg-slate-950/60 border border-slate-800 rounded-2xl p-5 h-72 overflow-y-auto text-slate-400 italic whitespace-pre-wrap leading-relaxed text-sm transition-all border-dashed";
             let finishedText = finalTranscript.trim();
             if (finishedText.endsWith('•')) finishedText = finishedText.slice(0, -1).trim();
